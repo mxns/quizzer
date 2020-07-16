@@ -3,7 +3,7 @@ var nodes = tree.reduce((acc, curr) => { acc[curr.id] = curr; return acc; }, {})
 nodes.root = nodes["Name"];
 var state = {};
 const preprocessors = require('./PreProcessors.js');
-var stateMachine = require('./Node')(nodes, preprocessors, state);
+var stateMachine = require('./StateMachine')(nodes, preprocessors, state);
 
 const ui = (() => {
 
