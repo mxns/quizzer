@@ -1,34 +1,30 @@
-'use strict'
-
-const readline = require("readline");
-const nodeData = require('./DecisionTree.js');
+const tree = require('./DecisionTree');
+var nodes = tree.reduce((acc, curr) => { acc[curr.id] = curr; return acc; }, {});
+nodes.root = nodes["Name"];
+var state = {};
 const preprocessors = require('./PreProcessors.js');
-const nodes = nodeData.reduce((acc, curr) => { acc[curr.id] = curr; return acc; }, { root: nodeData[0] });
-const Node = require('./Node.js')(id => nodes[id], preprocessors);
+var stateMachine = require('./Node')(nodes, preprocessors, state);
 
 const ui = (() => {
 
+    const readline = require("readline");
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
     });
 
-    function displayNode(node) {
+    function displayNode(output) {
         return new Promise((resolve, reject) => {
             try {
-                if (!node.output) {
-                    resolve();
-                    return;
-                }
-                const output = Node.output(node);
                 if (output.type === "Question") {
-                    rl.question(output.text + ' ', input => resolve(input));
+                    rl.question(output.text + ' ', input => {
+                        resolve(input);
+                    });
                 } else {
                     rl.write(output.text + '\n');
                     resolve();
                 }
             } catch (error) {
-                console.debug(`Error at node ${node ? node.id : 'unknown'}`);
                 reject(error);
             }
         });
@@ -36,19 +32,18 @@ const ui = (() => {
 
     return {
 
-        view: (path) => {
-            const node = path[path.length - 1];
-            const tail = path.slice(0, path.length - 1);
+        view: () => {
+            const output = stateMachine.output();
+            const head = output[output.length - 1];
+            const tail = output.slice(0, output.length - 1);
             tail
-                .filter(item => item.output)
                 .forEach(function (item) {
-                    const output = Node.output(item);
-                    rl.write(output.text + '\n');
+                    rl.write(item.text + '\n');
                 });
-            return displayNode(node);
+            return displayNode(head);
         },
 
-        close: () =>{ 
+        close: () => {
             try {
                 rl.close();
             } catch(error) {
@@ -58,38 +53,24 @@ const ui = (() => {
     };
 })();
 
-function loop(node, resolve, reject) {
+function loop(resolve, reject) {
     try {
-        if (node.next === undefined) {
-            resolve(Node.state());
+        if (!stateMachine.hasNext()) {
+            resolve();
             return;
         }
-        Node.next(node)
-            .then(path => processAndLoop(path, resolve, reject))
-            .catch(error => {
-                reject(error)
-            });
+        stateMachine.next()
+            .then(v => ui.view())
+            .then(input => stateMachine.process(input))
+            .then(v => loop(resolve, reject));
     } catch (error) {
         reject(error);
     }
 }
 
-function processAndLoop(path, resolve, reject) {
-    const node = path[path.length - 1];
-    ui.view(path)
-        .then(input => Node.process(node, input))
-        .then(v => Node.nextNode(node))
-        .then(nextNode => loop(nextNode, resolve, reject))
-        .catch(error => {
-            reject(error);
-        });
-}
-
-(new Promise((resolve, reject) => {
-    loop(nodes.root, resolve, reject)
-}))
-    .then(finalState => {
-        console.log(JSON.stringify(finalState, null, 2));
+(new Promise((resolve, reject) => loop(resolve, reject)))
+    .then(v => {
+        console.log(JSON.stringify(state, null, 2));
         ui.close();
     })
     .catch(error => {

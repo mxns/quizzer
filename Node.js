@@ -1,7 +1,9 @@
 'use strict'
 
 
-module.exports = function(nodes, preprocessors) {
+module.exports = function(nodes, preprocessors, state) {
+
+    var current = [nodes.root];
 
     const getNext = function (node, path, resolve, reject) {
         path.push(node);
@@ -14,7 +16,7 @@ module.exports = function(nodes, preprocessors) {
             resolve(path);
             return;
         }
-        const next = nodes(nextId);
+        const next = nodes[nextId];
         if (next === undefined) {
             reject(`[${node.id}] No next: ${nextId}`);
             return;
@@ -22,43 +24,40 @@ module.exports = function(nodes, preprocessors) {
         getNext(next, path, resolve, reject);
     };
 
-    const state = {};
-
     return {
 
-        state: () => JSON.parse(JSON.stringify(state)),
-
-        output: function (node) {
-            return node.output(state);
+        output: function () {
+            return current.filter(node => node.output).map(node => node.output(state));
         },
 
-        nextNode: function(node) {
-            return new Promise((resolve, reject) => {
-                if (node.next === undefined) {
-                    resolve(node);
-                    return;
-                }
-                const nextId = node.next(state);
-                if (nextId === undefined) {
-                    resolve(node);
-                    return;
-                }
-                const next = nodes(nextId);
-                if (next === undefined) {
-                    reject(`[${node.id}] No next: ${nextId}`);
-                    return;
-                }
-                resolve(next);
-            })
+        hasNext: function() {
+            var node = current[current.length - 1];
+            return node.next !== undefined;
         },
 
-        next: function (node) {
+        next: function () {
+            var node = current[current.length - 1];
+            if (node.next === undefined) {
+                return Promise.resolve();
+            }
+            const nextId = node.next(state);
+            if (nextId === undefined) {
+                return Promise.resolve();
+            }
+            const next = nodes[nextId];
+            if (next === undefined) {
+                return Promise.reject(`[${node.id}] No next: ${nextId}`);
+            }
             return new Promise((resolve, reject) => {
-                getNext(node, [], resolve, reject)
+                getNext(next, [], resolve, reject)
+            }).then(path => {
+                current = path;
+                return Promise.resolve();
             });
         },
 
-        process: function (node, input) {
+        process: function (input) {
+            var node = current[current.length - 1]
             if (node.process === undefined) {
                 return Promise.resolve();
             }
