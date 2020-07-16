@@ -129,27 +129,12 @@ module.exports = [
 
         next: function (state) {
             if (state.PresentAtCheckin == true) {
-                return "JustMakingSmallTalk";
+                return "AdditionalData";
             }
             if (state.PresentAtCheckin == false) {
-                return "JustMakingSmallTalk";
+                return "AdditionalData";
             }
         }
-    },
-
-    {
-        id: "JustMakingSmallTalk",
-
-        output: function (state) {
-            return {
-                text: `Nice weather today, ${state.Name}....`
-            }
-        },
-
-        next: function (state) {
-            return "AdditionalData"
-        }
-
     },
 
     {

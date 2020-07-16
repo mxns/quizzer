@@ -40,6 +40,9 @@ const ui = (() => {
                 .forEach(function (item) {
                     rl.write(item.text + '\n');
                 });
+            if (!head) {
+                return Promise.resolve();
+            }
             return displayNode(head);
         },
 
@@ -62,7 +65,8 @@ function loop(resolve, reject) {
         stateMachine.next()
             .then(v => ui.view())
             .then(input => stateMachine.process(input))
-            .then(v => loop(resolve, reject));
+            .then(v => loop(resolve, reject))
+            .catch(error => reject(error));
     } catch (error) {
         reject(error);
     }
