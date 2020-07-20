@@ -3,7 +3,7 @@
 
 module.exports = function(nodes, preprocessors, state) {
 
-    var current = [nodes.root];
+    var current;
 
     const getNext = function (node, path, resolve, reject) {
         path.push(node);
@@ -25,6 +25,13 @@ module.exports = function(nodes, preprocessors, state) {
     };
 
     return {
+
+        setRoot(nodeId) {
+            if (!nodes[nodeId]) {
+                throw `Unknown node: ${nodeId}`;
+            }
+            current = [nodes[nodeId]];
+        },
 
         output: function () {
             return current.filter(node => node.output).map(node => node.output(state));

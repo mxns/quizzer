@@ -1,9 +1,10 @@
 const tree = require('./DecisionTree');
-var nodes = tree.reduce((acc, curr) => { acc[curr.id] = curr; return acc; }, {});
-nodes.root = nodes["Name"];
-var state = {};
+const nodes = tree.reduce((acc, curr) => { acc[curr.id] = curr; return acc; }, {});
 const preprocessors = require('./PreProcessors.js');
-var stateMachine = require('./StateMachine')(nodes, preprocessors, state);
+const state = {};
+const stateMachine = require('./StateMachine')(nodes, preprocessors, state);
+
+stateMachine.setRoot("Name");
 
 const ui = (() => {
 
