@@ -53,7 +53,8 @@ function loop(resolve, reject) {
     try {
         if (!stateMachine.hasNext()) {
             return ui.view(stateMachine.output())
-                        .then(input => resolve(input));
+                        .then(input => resolve(input))
+                        .catch(error => reject(error));
         }
         ui.view(stateMachine.output())
             .then(input => stateMachine.process(input))
