@@ -52,12 +52,12 @@ const ui = (() => {
 function loop(resolve, reject) {
     try {
         if (!stateMachine.hasNext()) {
-            return ui.view(stateMachine.output())
+            return ui.view(stateMachine.getOutput())
                         .then(input => resolve(input))
                         .catch(error => reject(error));
         }
-        ui.view(stateMachine.output())
-            .then(input => stateMachine.process(input))
+        ui.view(stateMachine.getOutput())
+            .then(input => stateMachine.processInput(input))
             .then(v => loop(resolve, reject))
             .catch(error => reject(error));
     } catch (error) {

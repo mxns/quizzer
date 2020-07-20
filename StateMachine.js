@@ -37,11 +37,11 @@ module.exports = function(nodes, preprocessors, state) {
             return node.next !== undefined;
         },
 
-        output: function () {
+        getOutput: function() {
             return current.filter(node => node.output).map(node => node.output(state));
         },
 
-        process: function (input) {
+        processInput: function(input) {
             var node = current[current.length - 1]
             if (node.process === undefined) {
                 return next();
