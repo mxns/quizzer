@@ -32,15 +32,10 @@ const ui = (() => {
     return {
 
         view: (output) => {
-            const head = output[output.length - 1];
-            const tail = output.slice(0, output.length - 1);
-            tail
-                .forEach(function (item) {
-                    rl.write(item.text + '\n');
-                });
-            if (!head) {
+            if (output.length == 0) {
                 return Promise.resolve();
             }
+            const head = output[output.length - 1];
             return displayNode(head);
         },
 
@@ -57,8 +52,8 @@ const ui = (() => {
 function loop(resolve, reject) {
     try {
         if (!stateMachine.hasNext()) {
-            resolve();
-            return;
+            return ui.view(stateMachine.output())
+                        .then(input => resolve(input));
         }
         ui.view(stateMachine.output())
             .then(input => stateMachine.process(input))
