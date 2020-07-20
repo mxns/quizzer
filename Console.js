@@ -4,8 +4,6 @@ const preprocessors = require('./PreProcessors.js');
 const state = {};
 const stateMachine = require('./StateMachine')(nodes, preprocessors, state);
 
-stateMachine.setRoot("Name");
-
 const ui = (() => {
 
     const readline = require("readline");
@@ -33,8 +31,7 @@ const ui = (() => {
 
     return {
 
-        view: () => {
-            const output = stateMachine.output();
+        view: (output) => {
             const head = output[output.length - 1];
             const tail = output.slice(0, output.length - 1);
             tail
@@ -63,8 +60,7 @@ function loop(resolve, reject) {
             resolve();
             return;
         }
-        stateMachine.next()
-            .then(v => ui.view())
+        ui.view(stateMachine.output())
             .then(input => stateMachine.process(input))
             .then(v => loop(resolve, reject))
             .catch(error => reject(error));
@@ -73,7 +69,8 @@ function loop(resolve, reject) {
     }
 }
 
-(new Promise((resolve, reject) => loop(resolve, reject)))
+stateMachine.setRoot("Name")
+    .then(v => new Promise((resolve, reject) => loop(resolve, reject)))
     .then(v => {
         console.log(JSON.stringify(state, null, 2));
         ui.close();

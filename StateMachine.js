@@ -5,25 +5,6 @@ module.exports = function(nodes, preprocessors, state) {
 
     var current;
 
-    const getNext = function (node, path, resolve, reject) {
-        path.push(node);
-        if (node.next === undefined) {
-            resolve(path);
-            return;
-        }
-        const nextId = node.next(state);
-        if (nextId === undefined) {
-            resolve(path);
-            return;
-        }
-        const next = nodes[nextId];
-        if (next === undefined) {
-            reject(`[${node.id}] No next: ${nextId}`);
-            return;
-        }
-        getNext(next, path, resolve, reject);
-    };
-
     return {
 
         setRoot(nodeId) {
@@ -31,6 +12,7 @@ module.exports = function(nodes, preprocessors, state) {
                 throw `Unknown node: ${nodeId}`;
             }
             current = [nodes[nodeId]];
+            return this.next();
         },
 
         output: function () {
@@ -55,27 +37,23 @@ module.exports = function(nodes, preprocessors, state) {
             if (next === undefined) {
                 return Promise.reject(`[${node.id}] No next: ${nextId}`);
             }
-            return new Promise((resolve, reject) => {
-                getNext(next, [], resolve, reject)
-            }).then(path => {
-                current = path;
-                return Promise.resolve();
-            });
+            current = [next];
+            return Promise.resolve();
         },
 
         process: function (input) {
             var node = current[current.length - 1]
             if (node.process === undefined) {
-                return Promise.resolve();
+                return this.next();
             }
             const preprocessor = preprocessors[node.type];
             if (!preprocessor) {
                 return Promise.resolve(node.process(state, input))
-                    .then(v => Promise.resolve());
+                    .then(v => this.next());
             }
             return Promise.resolve(preprocessor(state, input))
                 .then(processedInput => Promise.resolve(node.process(state, processedInput)))
-                .then(v => Promise.resolve());
+                .then(v => this.next());
         }
     }
 };
