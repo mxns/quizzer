@@ -32,6 +32,11 @@ module.exports = function(nodes, preprocessors, state) {
             return next();
         },
 
+        getCurrent: function() {
+            var node = current[current.length - 1];
+            return node.id;
+        },
+
         hasNext: function() {
             var node = current[current.length - 1];
             return node.next !== undefined;
