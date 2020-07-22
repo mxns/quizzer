@@ -1,14 +1,44 @@
-const tree = require('../programs/DecisionTree');
-const preprocessors = require('../programs/PreProcessors.js');
-const state = {};
+'use strict'
 
-const nodeRepository = require('../NodeRepository')();
-nodeRepository
-    .load('./programs/DecisionTree')
-    .load('./programs/Reception')
-    .load('./programs/Exit');
+const stateMachine = (() => {
 
-const stateMachine = require('../StateMachine')(nodeRepository, preprocessors, state);
+    const state = {};
+    const preprocessors = require('../programs/PreProcessors.js');
+    const nodeRepository = require('../NodeRepository')()
+        .load('./programs/DecisionTree')
+        .load('./programs/Reception')
+        .load('./programs/Exit');
+    const sm = require('../StateMachine')(nodeRepository, preprocessors, state);
+
+    return {
+        output: null,
+        setRoot: (nodeId) => sm.setRoot(nodeId),
+        hasNext: () => sm.hasNext(),
+        getOutput: () => {
+            if (this.output) {
+                return [{ type: "Command", text: this.output }];
+            }
+            return sm.getOutput()
+        },
+        processInput: (input) => {
+            this.output = null;
+            if (input && input.startsWith('$')) {
+                const cmd = input.substring(1).split(' ').filter(item => item);
+                switch (cmd[0]) {
+                    case 'state':
+                        this.output = JSON.stringify(state, null, 2);
+                        break;
+                    case 'goto':
+                        sm.setRoot(cmd[1]);
+                        break;
+                }
+                return Promise.resolve();
+            }
+            return sm.processInput(input);
+        },
+        getState: () => JSON.stringify(state, null, 2)
+    };
+})();
 
 const ui = (() => {
 
@@ -74,7 +104,7 @@ function loop(resolve, reject) {
 stateMachine.setRoot("Name")
     .then(v => new Promise((resolve, reject) => loop(resolve, reject)))
     .then(v => {
-        console.log(JSON.stringify(state, null, 2));
+        console.log(stateMachine.getState());
         ui.close();
     })
     .catch(error => {

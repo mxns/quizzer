@@ -7,6 +7,9 @@ module.exports = (() => {
 
    return {
        YesNo: function(state, input) {
+            if (!input) {
+                return;
+            }
            if (input.match(yes)) {
                return 'yes';
            } else if (input.match(no)) {
