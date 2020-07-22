@@ -1,8 +1,14 @@
-const tree = require('./DecisionTree');
-const nodes = tree.reduce((acc, curr) => { acc[curr.id] = curr; return acc; }, {});
-const preprocessors = require('./PreProcessors.js');
+const tree = require('../programs/DecisionTree');
+const preprocessors = require('../programs/PreProcessors.js');
 const state = {};
-const stateMachine = require('./StateMachine')(nodes, preprocessors, state);
+
+const nodeRepository = require('../NodeRepository')();
+nodeRepository
+    .load('./programs/DecisionTree')
+    .load('./programs/Reception')
+    .load('./programs/Exit');
+
+const stateMachine = require('../StateMachine')(nodeRepository, preprocessors, state);
 
 const ui = (() => {
 

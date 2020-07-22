@@ -1,7 +1,11 @@
-const tree = require('../DecisionTree');
-const nodes = tree.reduce((acc, curr) => { acc[curr.id] = curr; return acc; }, {});
-const preprocessors = require('../PreProcessors.js');
+const tree = require('../programs/DecisionTree');
+const preprocessors = require('../programs/PreProcessors.js');
 const stateMachine = require('../StateMachine');
+const nodeRepository = require('../NodeRepository')();
+nodeRepository
+    .load('./programs/DecisionTree')
+    .load('./programs/Reception')
+    .load('./programs/Exit');
 
 const express = require('express')
 const cookieParser = require('cookie-parser')
@@ -17,7 +21,7 @@ function createStateMachine(req) {
     if (!data) {
         data = { state: {} };
     }
-    const sm = stateMachine(nodes, preprocessors, data.state);
+    const sm = stateMachine(nodeRepository, preprocessors, data.state);
     data.root = data.root || "Name";
     const wrapper = {
         getData: function () {

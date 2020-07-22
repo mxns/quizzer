@@ -2,43 +2,6 @@
 
 module.exports = [
     {
-        id: "Name",
-
-        output: function (state) {
-            return {
-                type: "Question",
-                text: "What is your name?"
-            }
-        },
-
-        process: function (state, input) {
-            if (input) {
-                state.Name = input;
-            }
-        },
-
-        next: function (state) {
-            if (state.Name) {
-                return "Hey";
-            }
-        }
-    },
-
-    {
-        id: "Hey",
-
-        output: function (state) {
-            return {
-                text: `Hey ${state.Name}!`
-            }
-        },
-
-        next: function (state) {
-            return "DepartEuAirport"
-        }
-    },
-
-    {
         id: "DepartEuAirport",
 
         type: "YesNo",
@@ -135,30 +98,5 @@ module.exports = [
                 return "AdditionalData";
             }
         }
-    },
-
-    {
-        id: "AdditionalData",
-
-        process: function (state, input) {
-            state.AdditionalData = "SomethingSomething";
-        },
-
-        next: function (state) {
-            if (state.AdditionalData) {
-                return "End"
-            }
-        }
-
-    },
-
-    {
-        id: "End",
-
-        output: function (state) {
-            return {
-                text: `Bye, ${state.Name}....`
-            }
-        },
     }
 ];

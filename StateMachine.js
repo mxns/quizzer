@@ -1,7 +1,7 @@
 'use strict'
 
 
-module.exports = function(nodes, preprocessors, state) {
+module.exports = function(nodeRepository, preprocessors, state) {
 
     var current;
 
@@ -14,7 +14,7 @@ module.exports = function(nodes, preprocessors, state) {
         if (nextId === undefined) {
             return Promise.resolve();
         }
-        const next = nodes[nextId];
+        const next = nodeRepository.getNode(nextId);
         if (next === undefined) {
             return Promise.reject(`[${node.id}] No next: ${nextId}`);
         }
@@ -25,10 +25,10 @@ module.exports = function(nodes, preprocessors, state) {
     return {
 
         setRoot(nodeId) {
-            if (!nodes[nodeId]) {
-                throw `Unknown node: ${nodeId}`;
+            if (!nodeRepository.getNode(nodeId)) {
+                throw `Unknown node ID: ${nodeId}`;
             }
-            current = [nodes[nodeId]];
+            current = [nodeRepository.getNode(nodeId)];
             return next();
         },
 
@@ -60,5 +60,5 @@ module.exports = function(nodes, preprocessors, state) {
                 .then(processedInput => Promise.resolve(node.process(state, processedInput)))
                 .then(v => next());
         }
-    }
+    };
 };
