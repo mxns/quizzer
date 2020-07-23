@@ -1,46 +1,6 @@
 'use strict'
 
-const stateMachine = (() => {
-
-    const state = {};
-    const preprocessors = require('../programs/PreProcessors.js');
-    const nodeRepository = require('../NodeRepository')()
-        .load('./programs/DecisionTree')
-        .load('./programs/Reception')
-        .load('./programs/Exit');
-    const sm = require('../StateMachine')(nodeRepository, preprocessors, state);
-
-    return {
-        output: null,
-        setRoot: (nodeId) => sm.setRoot(nodeId),
-        hasNext: () => sm.hasNext(),
-        getOutput: () => {
-            if (this.output) {
-                return [{ type: "Command", text: this.output }];
-            }
-            return sm.getOutput()
-        },
-        processInput: (input) => {
-            this.output = null;
-            if (input && input.startsWith('$')) {
-                const cmd = input.substring(1).split(' ').filter(item => item);
-                switch (cmd[0]) {
-                    case 'state':
-                        this.output = JSON.stringify(state, null, 2);
-                        break;
-                    case 'goto':
-                        sm.setRoot(cmd[1]);
-                        break;
-                }
-                return Promise.resolve();
-            }
-            return sm.processInput(input);
-        },
-        getState: () => JSON.stringify(state, null, 2)
-    };
-})();
-
-const ui = (() => {
+const UI = (() => {
 
     const readline = require("readline");
     const rl = readline.createInterface({
@@ -48,31 +8,23 @@ const ui = (() => {
         output: process.stdout
     });
 
-    function displayNode(output) {
-        return new Promise((resolve, reject) => {
-            try {
-                if (output.type === "Question") {
-                    rl.question(output.text + ' ', input => {
-                        resolve(input);
-                    });
-                } else {
-                    rl.write(output.text + '\n');
-                    resolve();
-                }
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
     return {
 
         view: (output) => {
-            if (output.length == 0) {
+            if (!output) {
                 return Promise.resolve();
             }
-            const head = output[output.length - 1];
-            return displayNode(head);
+            return new Promise((resolve, reject) => {
+                try {
+                    rl.question(output.text + ' ', input => resolve(input));
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        },
+
+        print: (output) => {
+            rl.write(output + '\n');
         },
 
         close: () => {
@@ -83,28 +35,67 @@ const ui = (() => {
             }
         }
     };
-})();
+});
 
-function loop(resolve, reject) {
+const StateMachine = ((modules, ui) => {
+
+    const state = {};
+    const preprocessors = require('../programs/PreProcessors.js');
+    const nodeRepository = require('../NodeRepository')();
+    modules.forEach(module => nodeRepository.load(module));
+    const sm = require('../StateMachine')(nodeRepository, preprocessors, state);
+
+    return {
+        setRoot: (nodeId) => sm.setRoot(nodeId),
+        hasNext: () => sm.hasNext(),
+        next: () => sm.next(),
+        getOutput: () => sm.getOutput(),
+        processInput: (input) => {
+            if (input && input.startsWith('$')) {
+                const cmd = input.substring(1).split(' ').filter(item => item);
+                switch (cmd[0]) {
+                    case 'state':
+                        ui.print(JSON.stringify(state, null, 2));
+                        break;
+                    case 'goto':
+                        return sm.setRoot(cmd[1]);
+                    default:
+                        ui.print(`Unknown command ${cmd[0]}`);
+                }
+                return Promise.resolve();
+            }
+            return sm.processInput(input).then(v => sm.hasNext() ? sm.next() : Promise.resolve());
+        },
+        getState: () => JSON.parse(JSON.stringify(state)),
+        getCurrent: () => sm.getCurrent()
+    };
+});
+
+function loop(stateMachine, ui, resolve, reject) {
     try {
-        if (!stateMachine.hasNext()) {
+        if (!stateMachine.getCurrent().hasNext()) {
             return ui.view(stateMachine.getOutput())
-                        .then(input => resolve(input))
+                        .then(input => resolve(stateMachine.getState()))
                         .catch(error => reject(error));
         }
-        ui.view(stateMachine.getOutput())
+        return ui.view(stateMachine.getOutput())
             .then(input => stateMachine.processInput(input))
-            .then(v => loop(resolve, reject))
+            .then(v => loop(stateMachine, ui, resolve, reject))
             .catch(error => reject(error));
     } catch (error) {
         reject(error);
     }
 }
 
-stateMachine.setRoot("Name")
-    .then(v => new Promise((resolve, reject) => loop(resolve, reject)))
-    .then(v => {
-        console.log(stateMachine.getState());
+const startNodeId = process.argv[2];
+const modules = process.argv.slice(3);
+const ui = UI();
+const stateMachine = StateMachine(modules, ui);
+
+stateMachine.setRoot(startNodeId)
+    .then(v => new Promise((resolve, reject) => loop(stateMachine, ui, resolve, reject)))
+    .then(result => {
+        console.log(JSON.stringify(result, null, 2));
         ui.close();
     })
     .catch(error => {

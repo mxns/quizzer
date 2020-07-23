@@ -1,4 +1,5 @@
-const tree = require('../programs/DecisionTree');
+'use strict'
+
 const preprocessors = require('../programs/PreProcessors.js');
 const stateMachine = require('../StateMachine');
 const nodeRepository = require('../NodeRepository')();
@@ -17,30 +18,24 @@ const port = 3000;
 app.use(cookieParser());
 
 function createStateMachine(req) {
-    var data = req.cookies.quizzer;
-    if (!data) {
-        data = { state: {} };
-    }
+    var data = JSON.parse(JSON.stringify(req.cookies.quizzer || { state: {} }));
     const sm = stateMachine(nodeRepository, preprocessors, data.state);
     data.root = data.root || "Name";
     const wrapper = {
-        getData: function () {
-            return JSON.parse(JSON.stringify(data));
-        },
-        getOutput: function () {
-            return sm.getOutput();
-        },
-        processInput: function (input) {
-            return sm.processInput(input).then(v => {
-                data.root = sm.getCurrent();
-                return Promise.resolve();
-            })
-        }
+        getData: () => JSON.parse(JSON.stringify(data)),
+        getOutput: () => sm.getOutput(),
+        processInput: (input) => sm.processInput(input),
+        getNode: (nodeId) => sm.getNode(nodeId),
+        hasNext: () => sm.hasNext(),
+        next: () => sm.next().then(v => {
+            data.root = sm.getCurrent().id;
+            return Promise.resolve();
+        })
     };
     return sm.setRoot(data.root).then(v => wrapper);
 }
 
-function get(req, res) {
+function getOutput(req, res) {
     createStateMachine(req)
         .then(sm => {
             res.cookie('quizzer', sm.getData(), { maxAge: 900000, httpOnly: true });
@@ -49,24 +44,51 @@ function get(req, res) {
         .catch(error => console.error(error));
 }
 
-function put(req, res) {
+function next(req, res) {
+    createStateMachine(req)
+        .then(sm => {
+            if (!sm.hasNext()) {
+                res.send("not ok");
+                return Promise.resolve();
+            }
+            return sm.next().then(v => {
+                res.cookie('quizzer', sm.getData(), { maxAge: 900000, httpOnly: true });
+                res.send(sm.hasNext())
+            });
+        })
+        .catch(error => console.error(error));
+}
+
+function getState(req, res) {
+    res.send(req.cookies.quizzer ? (req.cookies.quizzer.state || {}) : {});
+}
+
+function processInput(req, res) {
     const input = req.body.input;
     createStateMachine(req)
         .then(sm => sm.processInput(input).then(v => sm))
         .then(sm => {
             res.cookie('quizzer', sm.getData(), { maxAge: 900000, httpOnly: true });
-            res.send(sm.getOutput());
+            res.send(sm.hasNext());
         })
         .catch(error => console.error(error));
 }
 
 
 app.get('/sm', (req, res) => {
-    get(req, res);
+    getOutput(req, res);
+});
+
+app.get('/sm/state', (req, res) => {
+    getState(req, res);
+});
+
+app.put('/sm/next', (req, res) => {
+    next(req, res);
 });
 
 app.put('/sm', jsonParser, (req, res) => {
-    put(req, res);
+    processInput(req, res);
 });
 
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
