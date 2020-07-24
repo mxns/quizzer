@@ -10,9 +10,6 @@ module.exports = function(rootId, nodeRepository, preprocessors, state, history)
         getCurrent: function() {
             return {
                 id: current.id,
-                output: () => current.output(state),
-                process: (input) => current.process(state, input),
-                next: () => current.next(state),
                 hasNext: () => current.next != undefined
             };
         },
@@ -71,16 +68,6 @@ module.exports = function(rootId, nodeRepository, preprocessors, state, history)
             return Promise.resolve(preprocessor(state, input))
                 .then(processedInput => Promise.resolve(current.process(state, processedInput)))
                 .then(v => Promise.resolve());
-        },
-
-        getNode: function(nodeId) {
-            const node = nodeRepository.getNode(nodeId);
-            return {
-                id: node.id,
-                output: () => node.output(state),
-                process: (input) => node.process(state, input),
-                next: () => node.next(state)
-            };
         }
     };
 };
