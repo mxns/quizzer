@@ -8,10 +8,11 @@ module.exports = function(rootId, nodeRepository, preprocessors, state, history)
     return {
 
         getCurrent: function() {
-            return {
-                id: current.id,
-                hasNext: () => current.next != undefined
-            };
+            return current.id;
+        },
+
+        isHaltingNode: function() {
+            return current.next == undefined;
         },
 
         hasNext: function() {

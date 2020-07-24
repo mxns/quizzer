@@ -30,12 +30,12 @@ function createStateMachine(req) {
         hasPrevious: () => sm.hasPrevious(),
         next: () => {
                         sm.next();
-                        data.root = sm.getCurrent().id;
+                        data.root = sm.getCurrent();
                         return Promise.resolve();
                     },
         previous: () => {
                         sm.previous();
-                        data.root = sm.getCurrent().id;
+                        data.root = sm.getCurrent();
                         return Promise.resolve();
                     }
     };

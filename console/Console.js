@@ -68,14 +68,15 @@ const StateMachine = ((rootId, modules, ui) => {
             return sm.processInput(input).then(v => sm.hasNext() ? sm.next() : Promise.resolve());
         },
         getState: () => JSON.parse(JSON.stringify(state)),
-        getCurrent: () => sm.getCurrent()
+        getCurrent: () => sm.getCurrent(),
+        isHaltingNode: () => sm.isHaltingNode()
     };
 });
 
 const Loop = (stateMachine, ui) => {
     function loop(stateMachine, ui, resolve, reject) {
         try {
-            if (!stateMachine.getCurrent().hasNext()) {
+            if (stateMachine.isHaltingNode()) {
                 return stateMachine.getOutput()
                             .then(output => ui.view(output))
                             .then(input => resolve(stateMachine.getState()))
