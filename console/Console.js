@@ -92,7 +92,7 @@ const Loop = (stateMachine, ui) => {
         }
     }
     return {
-        run: () => new Promise((resolve, reject) => loop(stateMachine, ui, resolve, resolve))
+        run: () => new Promise((resolve, reject) => loop(stateMachine, ui, resolve, reject))
     };
 }
 
