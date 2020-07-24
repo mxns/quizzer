@@ -37,13 +37,13 @@ const UI = (() => {
     };
 });
 
-const StateMachine = ((modules, ui) => {
+const StateMachine = ((rootId, modules, ui) => {
 
     const state = {};
     const preprocessors = require('../programs/PreProcessors.js');
     const nodeRepository = require('../NodeRepository')();
     modules.forEach(module => nodeRepository.load(module));
-    const sm = require('../StateMachine')(nodeRepository, preprocessors, state);
+    const sm = require('../StateMachine')(rootId, nodeRepository, preprocessors, state);
 
     return {
         setRoot: (nodeId) => sm.setRoot(nodeId),
@@ -74,11 +74,13 @@ const StateMachine = ((modules, ui) => {
 function loop(stateMachine, ui, resolve, reject) {
     try {
         if (!stateMachine.getCurrent().hasNext()) {
-            return ui.view(stateMachine.getOutput())
+            return stateMachine.getOutput()
+                        .then(output => ui.view(output))
                         .then(input => resolve(stateMachine.getState()))
                         .catch(error => reject(error));
         }
-        return ui.view(stateMachine.getOutput())
+        return stateMachine.getOutput()
+            .then(output => ui.view(output))
             .then(input => stateMachine.processInput(input))
             .then(v => loop(stateMachine, ui, resolve, reject))
             .catch(error => reject(error));
@@ -90,10 +92,9 @@ function loop(stateMachine, ui, resolve, reject) {
 const startNodeId = process.argv[2];
 const modules = process.argv.slice(3);
 const ui = UI();
-const stateMachine = StateMachine(modules, ui);
+const stateMachine = StateMachine(startNodeId, modules, ui);
 
-stateMachine.setRoot(startNodeId)
-    .then(v => new Promise((resolve, reject) => loop(stateMachine, ui, resolve, reject)))
+new Promise((resolve, reject) => loop(stateMachine, ui, resolve, reject))
     .then(result => {
         console.log(JSON.stringify(result, null, 2));
         ui.close();

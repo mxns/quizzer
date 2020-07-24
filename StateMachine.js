@@ -1,19 +1,14 @@
 'use strict'
 
 
-module.exports = function(nodeRepository, preprocessors, state) {
+module.exports = function(rootId, nodeRepository, preprocessors, state) {
 
-    var current;
+    var current = nodeRepository.getNode(rootId);
 
     return {
 
-        setRoot(nodeId) {
-            const node = nodeRepository.getNode(nodeId);
-            if (!node) {
-                throw `Unknown node ID: ${nodeId}`;
-            }
-            current = node;
-            return Promise.resolve();
+        setCurrent(nodeId) {
+            current = nodeRepository.getNode(nodeId);
         },
 
         getCurrent: function() {
@@ -27,64 +22,52 @@ module.exports = function(nodeRepository, preprocessors, state) {
         },
 
         hasNext: function() {
-            var node = current;
-            if (node.next == undefined) {
+            if (current.next == undefined) {
                 return false;
             }
-            const nextId = node.next(state);
+            const nextId = current.next(state);
             if (nextId == undefined) {
                 return false;
             }
             const next = nodeRepository.getNode(nextId);
-            if (next == undefined) {
-                throw `[${node.id}] No next: ${nextId}`;
-            }
             return true;
         },
 
         next: function() {
-            var node = current;
-            if (node.next == undefined) {
-                return Promise.reject(`${current.id} has no next method`);
+            if (current.next == undefined) {
+                throw `${current.id} has no next method`;
             }
-            const nextId = node.next(state);
+            const nextId = current.next(state);
             if (nextId == undefined) {
-                return Promise.reject(`${current.id} is not fulfilled`);
+                throw `${current.id} is not fulfilled`;
             }
             const next = nodeRepository.getNode(nextId);
-            if (next == undefined) {
-                return Promise.reject(`${current.id}: node does not exist: ${nextId}`);
-            }
             current = next;
-            return Promise.resolve();
         },
 
         getOutput: function() {
-            if (current.output) {
-                return current.output(state);
+            if (current.output == undefined) {
+                return Promise.resolve();
             }
+            return Promise.resolve(current.output(state));
         },
 
         processInput: function(input) {
-            var node = current;
-            if (node.process == undefined) {
+            if (current.process == undefined) {
                 return Promise.resolve();
             }
-            const preprocessor = preprocessors[node.type];
-            if (!preprocessor) {
-                return Promise.resolve(node.process(state, input))
+            const preprocessor = preprocessors[current.type];
+            if (preprocessor == undefined) {
+                return Promise.resolve(current.process(state, input))
                     .then(v => Promise.resolve());
             }
             return Promise.resolve(preprocessor(state, input))
-                .then(processedInput => Promise.resolve(node.process(state, processedInput)))
+                .then(processedInput => Promise.resolve(current.process(state, processedInput)))
                 .then(v => Promise.resolve());
         },
 
         getNode: function(nodeId) {
             const node = nodeRepository.getNode(nodeId);
-            if (!node) {
-                throw `Unknown node ID: ${nodeId}`;
-            }
             return {
                 id: node.id,
                 output: () => node.output(state),
