@@ -34,8 +34,9 @@ module.exports = function(rootId, nodeRepository, preprocessors, state, history)
             if (nextId == undefined) {
                 throw `${current.id} is not fulfilled`;
             }
-            history.push(current.id);
+            const previousId = current.id;
             current = nodeRepository.getNode(nextId);
+            history.push(previousId);
         },
 
         hasPrevious: function() {
