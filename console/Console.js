@@ -43,10 +43,9 @@ const StateMachine = ((rootId, modules, ui) => {
     const preprocessors = require('../programs/PreProcessors.js');
     const nodeRepository = require('../NodeRepository')();
     modules.forEach(module => nodeRepository.load(module));
-    const sm = require('../StateMachine')(rootId, nodeRepository, preprocessors, state);
+    const sm = require('../StateMachine')(rootId, nodeRepository, preprocessors, state, []);
 
     return {
-        setRoot: (nodeId) => sm.setRoot(nodeId),
         hasNext: () => sm.hasNext(),
         next: () => sm.next(),
         getOutput: () => sm.getOutput(),
@@ -57,8 +56,10 @@ const StateMachine = ((rootId, modules, ui) => {
                     case 'state':
                         ui.print(JSON.stringify(state, null, 2));
                         break;
-                    case 'goto':
-                        return sm.setRoot(cmd[1]);
+                    case 'next':
+                        return sm.next();
+                    case 'previous':
+                        return sm.previous();
                     default:
                         ui.print(`Unknown command ${cmd[0]}`);
                 }

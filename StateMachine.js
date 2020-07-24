@@ -1,15 +1,11 @@
 'use strict'
 
 
-module.exports = function(rootId, nodeRepository, preprocessors, state) {
+module.exports = function(rootId, nodeRepository, preprocessors, state, history) {
 
     var current = nodeRepository.getNode(rootId);
 
     return {
-
-        setCurrent(nodeId) {
-            current = nodeRepository.getNode(nodeId);
-        },
 
         getCurrent: function() {
             return {
@@ -41,8 +37,19 @@ module.exports = function(rootId, nodeRepository, preprocessors, state) {
             if (nextId == undefined) {
                 throw `${current.id} is not fulfilled`;
             }
-            const next = nodeRepository.getNode(nextId);
-            current = next;
+            history.push(current.id);
+            current = nodeRepository.getNode(nextId);
+        },
+
+        hasPrevious: function() {
+            return history.length > 0;
+        },
+
+        previous: function() {
+            if (history.length == 0) {
+                throw `No available history`;
+            }
+            current = nodeRepository.getNode(history.pop());
         },
 
         getOutput: function() {
