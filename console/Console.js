@@ -72,30 +72,36 @@ const StateMachine = ((rootId, modules, ui) => {
     };
 });
 
-function loop(stateMachine, ui, resolve, reject) {
-    try {
-        if (!stateMachine.getCurrent().hasNext()) {
+const Loop = (stateMachine, ui) => {
+    function loop(stateMachine, ui, resolve, reject) {
+        try {
+            if (!stateMachine.getCurrent().hasNext()) {
+                return stateMachine.getOutput()
+                            .then(output => ui.view(output))
+                            .then(input => resolve(stateMachine.getState()))
+                            .catch(error => reject(error));
+            }
             return stateMachine.getOutput()
-                        .then(output => ui.view(output))
-                        .then(input => resolve(stateMachine.getState()))
-                        .catch(error => reject(error));
+                .then(output => ui.view(output))
+                .then(input => stateMachine.processInput(input))
+                .then(v => loop(stateMachine, ui, resolve, reject))
+                .catch(error => reject(error));
+        } catch (error) {
+            reject(error);
         }
-        return stateMachine.getOutput()
-            .then(output => ui.view(output))
-            .then(input => stateMachine.processInput(input))
-            .then(v => loop(stateMachine, ui, resolve, reject))
-            .catch(error => reject(error));
-    } catch (error) {
-        reject(error);
     }
+    return {
+        run: () => new Promise((resolve, reject) => loop(stateMachine, ui, resolve, resolve))
+    };
 }
 
 const startNodeId = process.argv[2];
 const modules = process.argv.slice(3);
 const ui = UI();
 const stateMachine = StateMachine(startNodeId, modules, ui);
+const loop = Loop(stateMachine, ui);
 
-new Promise((resolve, reject) => loop(stateMachine, ui, resolve, reject))
+loop.run()
     .then(result => {
         console.log(JSON.stringify(result, null, 2));
         ui.close();
