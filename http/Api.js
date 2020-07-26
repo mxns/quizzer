@@ -52,7 +52,8 @@ function getOutput(req, res) {
 function next(req, res) {
     const sm = createStateMachine(req);
     if (!sm.hasNext()) {
-        res.send("not ok");
+        res.status(400);
+        res.send();
         return;
     }
     sm.next();
@@ -63,7 +64,8 @@ function next(req, res) {
 function previous(req, res) {
     const sm = createStateMachine(req);
     if (!sm.hasPrevious()) {
-        res.send("not ok");
+        res.status(400);
+        res.send();
         return;
     }
     sm.previous();
@@ -91,7 +93,7 @@ app.get('/sm', (req, res) => {
     getOutput(req, res);
 });
 
-app.put('/sm', jsonParser, (req, res) => {
+app.post('/sm', jsonParser, (req, res) => {
     processInput(req, res);
 });
 
@@ -99,11 +101,11 @@ app.get('/sm/state', (req, res) => {
     getState(req, res);
 });
 
-app.put('/sm/next', (req, res) => {
+app.post('/sm/next', (req, res) => {
     next(req, res);
 });
 
-app.put('/sm/previous', (req, res) => {
+app.post('/sm/previous', (req, res) => {
     previous(req, res);
 });
 
