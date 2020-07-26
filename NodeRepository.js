@@ -1,11 +1,11 @@
 'use strict'
 
-module.exports = function() {
+module.exports = function () {
 
     const nodes = {};
 
     return {
-        getNode: function(nodeId) {
+        getNode: function (nodeId) {
             const node = nodes[nodeId];
             if (!node) {
                 throw `Unknown node ID: ${nodeId}`;
@@ -13,7 +13,7 @@ module.exports = function() {
             return node;
         },
 
-        load: function(moduleName) {
+        load: function (moduleName) {
             const tree = require(moduleName);
             tree.reduce((acc, curr) => {
                 if (acc[curr.id]) {

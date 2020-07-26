@@ -30,7 +30,7 @@ const UI = (() => {
         close: () => {
             try {
                 rl.close();
-            } catch(error) {
+            } catch (error) {
                 console.error(error);
             }
         }
@@ -78,9 +78,9 @@ const Loop = (stateMachine, ui) => {
         try {
             if (stateMachine.isHaltingNode()) {
                 return stateMachine.getOutput()
-                            .then(output => ui.view(output))
-                            .then(input => resolve(stateMachine.getState()))
-                            .catch(error => reject(error));
+                    .then(output => ui.view(output))
+                    .then(input => resolve(stateMachine.getState()))
+                    .catch(error => reject(error));
             }
             return stateMachine.getOutput()
                 .then(output => ui.view(output))

@@ -29,15 +29,15 @@ function createStateMachine(req) {
         hasNext: () => sm.hasNext(),
         hasPrevious: () => sm.hasPrevious(),
         next: () => {
-                        sm.next();
-                        data.root = sm.getCurrent();
-                        return Promise.resolve();
-                    },
+            sm.next();
+            data.root = sm.getCurrent();
+            return Promise.resolve();
+        },
         previous: () => {
-                        sm.previous();
-                        data.root = sm.getCurrent();
-                        return Promise.resolve();
-                    }
+            sm.previous();
+            data.root = sm.getCurrent();
+            return Promise.resolve();
+        }
     };
     return wrapper;
 }

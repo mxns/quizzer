@@ -1,21 +1,21 @@
 'use strict'
 
 
-module.exports = function(rootId, nodeRepository, preprocessors, state, history) {
+module.exports = function (rootId, nodeRepository, preprocessors, state, history) {
 
     var current = nodeRepository.getNode(rootId);
 
     return {
 
-        getCurrent: function() {
+        getCurrent: function () {
             return current.id;
         },
 
-        isHaltingNode: function() {
+        isHaltingNode: function () {
             return current.next == undefined;
         },
 
-        hasNext: function() {
+        hasNext: function () {
             if (current.next == undefined) {
                 return false;
             }
@@ -27,7 +27,7 @@ module.exports = function(rootId, nodeRepository, preprocessors, state, history)
             return true;
         },
 
-        next: function() {
+        next: function () {
             if (current.next == undefined) {
                 throw `${current.id} has no next method`;
             }
@@ -40,25 +40,25 @@ module.exports = function(rootId, nodeRepository, preprocessors, state, history)
             history.push(previousId);
         },
 
-        hasPrevious: function() {
+        hasPrevious: function () {
             return history.length > 0;
         },
 
-        previous: function() {
+        previous: function () {
             if (history.length == 0) {
                 throw `No available history`;
             }
             current = nodeRepository.getNode(history.pop());
         },
 
-        getOutput: function() {
+        getOutput: function () {
             if (current.output == undefined) {
                 return Promise.resolve();
             }
             return Promise.resolve(current.output(state));
         },
 
-        processInput: function(input) {
+        processInput: function (input) {
             if (current.process == undefined) {
                 return Promise.resolve();
             }
